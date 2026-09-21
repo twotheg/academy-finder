@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const REGIONS: Record<string, Record<string, string[]>> = {
   '서울특별시': { '강남구': ['대치동', '도곡동'], '서초구': ['반포동', '서초동'], '송파구': ['잠실동', '방이동'], '양천구': ['목동'] },
@@ -33,6 +33,29 @@ export default function AcademyFinder() {
   const [selectedAcademy, setSelectedAcademy] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 즐겨찾기 상태 (브라우저 로컬 스토리지 연동)
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('academy_favorites');
+    if (saved) {
+      setFavorites(JSON.parse(saved));
+    }
+  }, []);
+
+  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // 모달창이 열리는 것 방지
+    let updated;
+    if (favorites.includes(id)) {
+      updated = favorites.filter(favId => favId !== id);
+    } else {
+      updated = [...favorites, id];
+    }
+    setFavorites(updated);
+    localStorage.setItem('academy_favorites', JSON.stringify(updated));
+  };
+
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCity = e.target.value;
     setCity(newCity);
@@ -49,6 +72,7 @@ export default function AcademyFinder() {
 
   const handleSearch = async () => {
     setIsLoading(true);
+    setActiveTab('search');
     const keyword = `${city} ${district} ${neighborhood} ${category === '전체' ? '' : category} 학원`;
     
     try {
@@ -56,12 +80,11 @@ export default function AcademyFinder() {
       const data = await response.json();
       
       if (data.documents) {
-        // 백엔드에서 내려주는 데이터를 프론트엔드 상태에 정확히 매핑
         const transformedData = data.documents.map((doc: any) => ({
           id: doc.id,
-          name: doc.name,          // 학원 이름 명확하게 매핑
-          address: doc.address,    // 주소 매핑
-          phone: doc.phone,        // 전화번호 매핑
+          name: doc.name,
+          address: doc.address,
+          phone: doc.phone,
           image: `https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=150&auto=format&fit=crop&q=80`,
           type: category !== '전체' ? category : '학원',
           place_url: doc.place_url,
@@ -79,56 +102,97 @@ export default function AcademyFinder() {
 
   return (
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen relative pb-10">
-      <div className="bg-white p-4 shadow-sm">
-        <h1 className="text-xl font-bold text-gray-800 mb-4">우리동네 학원 찾기</h1>
-        <div className="flex flex-col gap-2 mb-4">
-          <div className="flex gap-2">
-            <select className="flex-1 border rounded p-2 text-sm" value={city} onChange={handleCityChange}>
-              {Object.keys(REGIONS).map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select className="flex-1 border rounded p-2 text-sm" value={district} onChange={handleDistrictChange}>
-              {REGIONS[city] && Object.keys(REGIONS[city]).map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-            <select className="flex-1 border rounded p-2 text-sm" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)}>
-              {REGIONS[city][district]?.map((n: string) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <select className="border rounded p-2 text-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="전체">학원 종류 선택 (전체)</option>
-            {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-          </select>
-          <button 
-            onClick={handleSearch}
-            className="bg-blue-600 text-white font-bold py-3 rounded-lg mt-2 hover:bg-blue-700 transition"
-            disabled={isLoading}
-          >
-            {isLoading ? '검색 중...' : '조건에 맞는 학원 검색'}
-          </button>
-        </div>
+      {/* 상단 탭 네비게이션 */}
+      <div className="flex bg-white border-b">
+        <button 
+          className={`flex-1 py-3 text-sm font-bold ${activeTab === 'search' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          onClick={() => setActiveTab('search')}
+        >
+          🔍 학원 검색
+        </button>
+        <button 
+          className={`flex-1 py-3 text-sm font-bold ${activeTab === 'favorites' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
+          onClick={() => setActiveTab('favorites')}
+        >
+          ⭐ 관심 학원 ({favorites.length})
+        </button>
       </div>
 
-      <div className="p-4 flex flex-col gap-3">
-        {results.map((item) => (
-          <div 
-            key={item.id} 
-            className="bg-white rounded-lg shadow p-3 flex gap-4 cursor-pointer hover:shadow-md transition"
-            onClick={() => setSelectedAcademy(item)}
-          >
-            <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded" />
-            <div className="flex flex-col justify-center w-full overflow-hidden">
-              <span className="text-xs font-semibold text-blue-600 mb-1">{item.type}</span>
-              <h3 className="font-bold text-gray-900 truncate">{item.name}</h3>
-              <p className="text-xs text-gray-500 mt-1 truncate">{item.address}</p>
-              <p className="text-xs font-medium text-gray-700 mt-1">📞 {item.phone}</p>
+      {activeTab === 'search' ? (
+        <>
+          <div className="bg-white p-4 shadow-sm">
+            <h1 className="text-xl font-bold text-gray-800 mb-4">우리동네 학원 찾기</h1>
+            <div className="flex flex-col gap-2 mb-4">
+              <div className="flex gap-2">
+                <select className="flex-1 border rounded p-2 text-sm" value={city} onChange={handleCityChange}>
+                  {Object.keys(REGIONS).map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select className="flex-1 border rounded p-2 text-sm" value={district} onChange={handleDistrictChange}>
+                  {REGIONS[city] && Object.keys(REGIONS[city]).map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select className="flex-1 border rounded p-2 text-sm" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)}>
+                  {REGIONS[city][district]?.map((n: string) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <select className="border rounded p-2 text-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option value="전체">학원 종류 선택 (전체)</option>
+                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+              <button 
+                onClick={handleSearch}
+                className="bg-blue-600 text-white font-bold py-3 rounded-lg mt-2 hover:bg-blue-700 transition"
+                disabled={isLoading}
+              >
+                {isLoading ? '검색 중...' : '조건에 맞는 학원 검색'}
+              </button>
             </div>
           </div>
-        ))}
-        {results.length === 0 && !isLoading && (
-          <div className="text-center text-gray-500 mt-10">
-            검색 버튼을 눌러 학원을 확인해보세요.
+
+          <div className="p-4 flex flex-col gap-3">
+            {results.map((item) => {
+              const isFav = favorites.includes(item.id);
+              return (
+                <div 
+                  key={item.id} 
+                  className="bg-white rounded-lg shadow p-3 flex gap-4 cursor-pointer hover:shadow-md transition relative"
+                  onClick={() => setSelectedAcademy(item)}
+                >
+                  <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded" />
+                  <div className="flex flex-col justify-center w-full overflow-hidden pr-6">
+                    <span className="text-xs font-semibold text-blue-600 mb-1">{item.type}</span>
+                    <h3 className="font-bold text-gray-900 truncate">{item.name}</h3>
+                    <p className="text-xs text-gray-500 mt-1 truncate">{item.address}</p>
+                    <p className="text-xs font-medium text-gray-700 mt-1">📞 {item.phone}</p>
+                  </div>
+                  {/* 즐겨찾기 별모양 버튼 */}
+                  <button 
+                    onClick={(e) => toggleFavorite(item.id, e)}
+                    className="absolute top-3 right-3 text-2xl focus:outline-none"
+                  >
+                    {isFav ? '⭐' : '☆'}
+                  </button>
+                </div>
+              );
+            })}
+            {results.length === 0 && !isLoading && (
+              <div className="text-center text-gray-500 mt-10">
+                검색 버튼을 눌러 학원을 확인해보세요.
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      ) : (
+        <div className="p-4 flex flex-col gap-3">
+          <h2 className="font-bold text-gray-800 text-lg mb-2">⭐ 내가 찜한 관심 학원</h2>
+          {favorites.length === 0 ? (
+            <div className="text-center text-gray-500 mt-10">
+              아직 찜한 학원이 없습니다. 검색 결과에서 별표(⭐)를 눌러보세요!
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">관심 학원 목록 기능은 현재 검색된 세션 또는 추후 연동에서 불러올 수 있습니다.</p>
+          )}
+        </div>
+      )}
 
       {/* 상세 모달창 */}
       {selectedAcademy && (
@@ -142,7 +206,17 @@ export default function AcademyFinder() {
             </button>
             <img src={selectedAcademy.image} alt={selectedAcademy.name} className="w-full h-48 object-cover rounded-lg mb-4" />
             <h2 className="text-2xl font-bold mb-1">{selectedAcademy.name}</h2>
-            <p className="text-sm text-gray-500 mb-4">{selectedAcademy.address}</p>
+            <p className="text-sm text-gray-500 mb-2">{selectedAcademy.address}</p>
+            
+            {/* 전화 바로 걸기 링크 */}
+            <div className="mb-4">
+              <a 
+                href={`tel:${selectedAcademy.phone}`}
+                className="inline-block bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-sm font-semibold"
+              >
+                📞 전화 통화하기: {selectedAcademy.phone}
+              </a>
+            </div>
             
             <div className="mb-6">
               <h3 className="text-lg font-bold border-b pb-2 mb-3">🕒 학년별 시간표</h3>
