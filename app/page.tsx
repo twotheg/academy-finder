@@ -293,12 +293,12 @@ export default function AcademyFinder() {
   const [district, setDistrict] = useState('강남구');
   const [neighborhood, setNeighborhood] = useState('대치동');
   const [category, setCategory] = useState('전체');
+  const [directKeyword, setDirectKeyword] = useState(''); // 직접 검색어 상태
   
   const [results, setResults] = useState<any[]>([]);
   const [selectedAcademy, setSelectedAcademy] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 즐겨찾기 상태 (브라우저 로컬 스토리지 연동)
   const [favorites, setFavorites] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
 
@@ -310,7 +310,7 @@ export default function AcademyFinder() {
   }, []);
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // 모달창이 열리는 것 방지
+    e.stopPropagation();
     let updated;
     if (favorites.includes(id)) {
       updated = favorites.filter(favId => favId !== id);
@@ -335,10 +335,14 @@ export default function AcademyFinder() {
     setNeighborhood(REGIONS[city][newDistrict][0]);
   };
 
+  // 통합 검색 함수 (직접 검색어가 있으면 그것우선, 없으면 지역/카테고리 조합으로 검색)
   const handleSearch = async () => {
     setIsLoading(true);
     setActiveTab('search');
-    const keyword = `${city} ${district} ${neighborhood} ${category === '전체' ? '' : category} 학원`;
+    
+    const keyword = directKeyword.trim() 
+      ? directKeyword 
+      : `${city} ${district} ${neighborhood} ${category === '전체' ? '' : category} 학원`;
     
     try {
       const response = await fetch(`/api/search?query=${encodeURIComponent(keyword)}`);
@@ -367,7 +371,6 @@ export default function AcademyFinder() {
 
   return (
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen relative pb-10">
-      {/* 상단 탭 네비게이션 */}
       <div className="flex bg-white border-b">
         <button 
           className={`flex-1 py-3 text-sm font-bold ${activeTab === 'search' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
@@ -387,6 +390,19 @@ export default function AcademyFinder() {
         <>
           <div className="bg-white p-4 shadow-sm">
             <h1 className="text-xl font-bold text-gray-800 mb-4">우리동네 학원 찾기</h1>
+            
+            {/* 직접 검색 입력창 */}
+            <div className="flex gap-2 mb-3">
+              <input 
+                type="text" 
+                placeholder="학원 이름을 직접 입력하세요 (예: 한양수학학원)" 
+                className="flex-1 border rounded p-2 text-sm"
+                value={directKeyword}
+                onChange={(e) => setDirectKeyword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </div>
+
             <div className="flex flex-col gap-2 mb-4">
               <div className="flex gap-2">
                 <select className="flex-1 border rounded p-2 text-sm" value={city} onChange={handleCityChange}>
@@ -408,7 +424,7 @@ export default function AcademyFinder() {
                 className="bg-blue-600 text-white font-bold py-3 rounded-lg mt-2 hover:bg-blue-700 transition"
                 disabled={isLoading}
               >
-                {isLoading ? '검색 중...' : '조건에 맞는 학원 검색'}
+                {isLoading ? '검색 중...' : '학원 검색하기'}
               </button>
             </div>
           </div>
@@ -429,7 +445,6 @@ export default function AcademyFinder() {
                     <p className="text-xs text-gray-500 mt-1 truncate">{item.address}</p>
                     <p className="text-xs font-medium text-gray-700 mt-1">📞 {item.phone}</p>
                   </div>
-                  {/* 즐겨찾기 별모양 버튼 */}
                   <button 
                     onClick={(e) => toggleFavorite(item.id, e)}
                     className="absolute top-3 right-3 text-2xl focus:outline-none"
@@ -441,7 +456,7 @@ export default function AcademyFinder() {
             })}
             {results.length === 0 && !isLoading && (
               <div className="text-center text-gray-500 mt-10">
-                검색 버튼을 눌러 학원을 확인해보세요.
+                원하시는 학원을 검색해 보세요.
               </div>
             )}
           </div>
@@ -449,12 +464,10 @@ export default function AcademyFinder() {
       ) : (
         <div className="p-4 flex flex-col gap-3">
           <h2 className="font-bold text-gray-800 text-lg mb-2">⭐ 내가 찜한 관심 학원</h2>
-          {favorites.length === 0 ? (
+          {favorites.length === 0 && (
             <div className="text-center text-gray-500 mt-10">
-              아직 찜한 학원이 없습니다. 검색 결과에서 별표(⭐)를 눌러보세요!
+              아직 찜한 학원이 없습니다.
             </div>
-          ) : (
-            <p className="text-xs text-gray-500">관심 학원 목록 기능은 현재 검색된 세션 또는 추후 연동에서 불러올 수 있습니다.</p>
           )}
         </div>
       )}
@@ -473,7 +486,6 @@ export default function AcademyFinder() {
             <h2 className="text-2xl font-bold mb-1">{selectedAcademy.name}</h2>
             <p className="text-sm text-gray-500 mb-2">{selectedAcademy.address}</p>
             
-            {/* 전화 바로 걸기 링크 */}
             <div className="mb-4">
               <a 
                 href={`tel:${selectedAcademy.phone}`}
@@ -497,7 +509,7 @@ export default function AcademyFinder() {
 
             <div className="mb-6">
               <h3 className="text-lg font-bold border-b pb-2 mb-3">💰 학년별 수강료</h3>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col grade-box flex flex-col gap-2">
                 {selectedAcademy.pricing.map((p: any, idx: number) => (
                   <div key={idx} className="flex justify-between bg-blue-50 p-3 rounded text-sm">
                     <span className="font-semibold text-gray-700">{p.grade}</span>
@@ -507,7 +519,6 @@ export default function AcademyFinder() {
               </div>
             </div>
             
-            {/* 카카오맵 연동 버튼 */}
             <a 
               href={selectedAcademy.place_url}
               target="_blank"
