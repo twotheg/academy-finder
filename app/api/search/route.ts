@@ -29,7 +29,8 @@ export async function GET(request: Request) {
     // 3. Neon DB에서 해당 학원들의 커스텀 시간표/수강료 데이터 조회
     let dbDataMap = new Map();
     if (academyIds.length > 0) {
-      const placeholders = academyIds.map((_, i) => `$${i + 1}`).join(', ');
+      // 타입 에러 방지를 위해 매개변수 타입 명시
+      const placeholders = academyIds.map((id: any, i: number) => `$${i + 1}`).join(', ');
       const dbRes = await query(
         `select id, timetable, pricing from academy_info where id in (${placeholders})`,
         academyIds
@@ -48,10 +49,10 @@ export async function GET(request: Request) {
       const customData = dbDataMap.get(doc.id);
       return {
         id: doc.id,
-        name: doc.place_name, // 학원 이름 필드명 명확히 고정
-        address: doc.road_address_name || doc.address_name, // 주소 필드명 고정
+        name: doc.place_name,
+        address: doc.road_address_name || doc.address_name,
         phone: doc.phone || '전화번호 미등록',
-        image: `https://via.placeholder.com/150/3B82F6/FFFFFF?text=Academy`,
+        image: `https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=150&auto=format&fit=crop&q=80`,
         type: '학원',
         place_url: doc.place_url,
         timetable: customData?.timetable || [{ target: '등록된 시간표가 없습니다', time: '-', days: '-' }],
