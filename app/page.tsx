@@ -2,6 +2,29 @@
 
 import React, { useState, useEffect } from 'react';
 
+// 광고 배너 전용 컴포넌트
+const AdBanner = () => {
+  useEffect(() => {
+    try {
+      const adsbygoogle = (window as any).adsbygoogle || [];
+      adsbygoogle.push({});
+    } catch (e) {
+      console.error('AdSense Error:', e);
+    }
+  }, []);
+
+  return (
+    <div className="w-full flex justify-center my-4 overflow-hidden bg-gray-50 rounded-xl">
+      <ins className="adsbygoogle"
+           style={{ display: 'block', width: '100%', minHeight: '50px' }}
+           data-ad-client="ca-pub-4424569297437395"
+           data-ad-slot="여기에_광고단위_ID_입력" // 애드센스에서 디스플레이 광고 단위 생성 후 ID 입력
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+    </div>
+  );
+};
+
 const REGIONS: Record<string, Record<string, string[]>> = {
   "서울특별시": {
     "강남구": ["대치동", "도곡동", "개포동", "일원동", "역삼동", "삼성동", "청담동", "논현동"],
