@@ -10,7 +10,6 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 1. 카카오 장소 검색 API 호출
     const kakaoRes = await fetch(`https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(queryParam)}&category_group_code=AC5`, {
       headers: {
         Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}`,
@@ -23,13 +22,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ documents: [] });
     }
 
-    // 2. 카카오에서 받아온 학원 ID 목록 추출
     const academyIds = kakaoData.documents.map((doc: any) => doc.id);
 
-    // 3. Neon DB에서 해당 학원들의 커스텀 시간표/수강료 데이터 조회
     let dbDataMap = new Map();
     if (academyIds.length > 0) {
-      // 타입 에러 방지를 위해 매개변수 타입 명시
       const placeholders = academyIds.map((id: any, i: number) => `$${i + 1}`).join(', ');
       const dbRes = await query(
         `select id, timetable, pricing from academy_info where id in (${placeholders})`,
@@ -44,19 +40,29 @@ export async function GET(request: Request) {
       });
     }
 
-    // 4. 프론트엔드가 요구하는 이름(name, address)으로 정확히 매핑
     const transformedDocuments = kakaoData.documents.map((doc: any) => {
       const customData = dbDataMap.get(doc.id);
+      
+      // DB에 없는 학원들을 위해 자동으로 뿌려줄 대략적인 범위 데이터
+      const defaultTimetable = [
+        { target: '초등부', time: '오후 1:00 ~ 6:00 (학원별 상이)' },
+        { target: '중등부', time: '오후 5:00 ~ 10:00 (학원별 상이)' },
+        { target: '고등부', time: '오후 6:00 ~ 10:00 (학원별 상이)' }
+      ];
+      
+      const defaultPricing = [
+        { grade: '초/중/고 (단과/종합)', price: '약 15만 원 ~ 45만 원 (과목 및 시수별 상이)' }
+      ];
+
       return {
         id: doc.id,
         name: doc.place_name,
         address: doc.road_address_name || doc.address_name,
         phone: doc.phone || '전화번호 미등록',
-        image: `https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=150&auto=format&fit=crop&q=80`,
         type: '학원',
         place_url: doc.place_url,
-        timetable: customData?.timetable || [{ target: '등록된 시간표가 없습니다', time: '-', days: '-' }],
-        pricing: customData?.pricing || [{ grade: '등록된 수강료가 없습니다', price: '-' }],
+        timetable: customData?.timetable || defaultTimetable,
+        pricing: customData?.pricing || defaultPricing,
       };
     });
 
