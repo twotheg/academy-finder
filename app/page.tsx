@@ -293,7 +293,7 @@ export default function AcademyFinder() {
   const [district, setDistrict] = useState('강남구');
   const [neighborhood, setNeighborhood] = useState('대치동');
   const [category, setCategory] = useState('전체');
-  const [directKeyword, setDirectKeyword] = useState(''); // 직접 검색어 상태
+  const [directKeyword, setDirectKeyword] = useState('');
   
   const [results, setResults] = useState<any[]>([]);
   const [selectedAcademy, setSelectedAcademy] = useState<any | null>(null);
@@ -335,7 +335,6 @@ export default function AcademyFinder() {
     setNeighborhood(REGIONS[city][newDistrict][0]);
   };
 
-  // 통합 검색 함수 (직접 검색어가 있으면 그것우선, 없으면 지역/카테고리 조합으로 검색)
   const handleSearch = async () => {
     setIsLoading(true);
     setActiveTab('search');
@@ -354,7 +353,6 @@ export default function AcademyFinder() {
           name: doc.name,
           address: doc.address,
           phone: doc.phone,
-          image: `https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=150&auto=format&fit=crop&q=80`,
           type: category !== '전체' ? category : '학원',
           place_url: doc.place_url,
           timetable: doc.timetable,
@@ -391,12 +389,11 @@ export default function AcademyFinder() {
           <div className="bg-white p-4 shadow-sm">
             <h1 className="text-xl font-bold text-gray-800 mb-4">우리동네 학원 찾기</h1>
             
-            {/* 직접 검색 입력창 */}
             <div className="flex gap-2 mb-3">
               <input 
                 type="text" 
                 placeholder="학원 이름을 직접 입력하세요 (예: 한양수학학원)" 
-                className="flex-1 border rounded p-2 text-sm"
+                className="flex-1 border rounded p-2 text-sm focus:outline-none focus:border-blue-500"
                 value={directKeyword}
                 onChange={(e) => setDirectKeyword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -435,19 +432,20 @@ export default function AcademyFinder() {
               return (
                 <div 
                   key={item.id} 
-                  className="bg-white rounded-lg shadow p-3 flex gap-4 cursor-pointer hover:shadow-md transition relative"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col cursor-pointer hover:shadow-md transition relative"
                   onClick={() => setSelectedAcademy(item)}
                 >
-                  <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded" />
-                  <div className="flex flex-col justify-center w-full overflow-hidden pr-6">
-                    <span className="text-xs font-semibold text-blue-600 mb-1">{item.type}</span>
-                    <h3 className="font-bold text-gray-900 truncate">{item.name}</h3>
-                    <p className="text-xs text-gray-500 mt-1 truncate">{item.address}</p>
-                    <p className="text-xs font-medium text-gray-700 mt-1">📞 {item.phone}</p>
+                  <div className="pr-8">
+                    <span className="inline-block bg-blue-50 text-blue-600 text-xs font-bold px-2 py-1 rounded mb-2">
+                      {item.type}
+                    </span>
+                    <h3 className="font-bold text-gray-900 text-lg mb-1">{item.name}</h3>
+                    <p className="text-sm text-gray-500 mb-2">{item.address}</p>
+                    <p className="text-sm font-semibold text-gray-700">📞 {item.phone}</p>
                   </div>
                   <button 
                     onClick={(e) => toggleFavorite(item.id, e)}
-                    className="absolute top-3 right-3 text-2xl focus:outline-none"
+                    className="absolute top-4 right-4 text-2xl focus:outline-none"
                   >
                     {isFav ? '⭐' : '☆'}
                   </button>
@@ -475,45 +473,52 @@ export default function AcademyFinder() {
       {/* 상세 모달창 */}
       {selectedAcademy && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-          <div className="bg-white w-full max-w-md h-5/6 rounded-t-2xl p-5 overflow-y-auto relative pb-20">
+          <div className="bg-white w-full max-w-md h-5/6 rounded-t-2xl p-6 overflow-y-auto relative pb-20 shadow-xl">
             <button 
-              className="absolute top-4 right-4 bg-gray-200 text-gray-700 rounded-full w-8 h-8 font-bold"
+              className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full w-8 h-8 font-bold flex items-center justify-center transition"
               onClick={() => setSelectedAcademy(null)}
             >
               ✕
             </button>
-            <img src={selectedAcademy.image} alt={selectedAcademy.name} className="w-full h-48 object-cover rounded-lg mb-4" />
-            <h2 className="text-2xl font-bold mb-1">{selectedAcademy.name}</h2>
-            <p className="text-sm text-gray-500 mb-2">{selectedAcademy.address}</p>
             
-            <div className="mb-4">
+            <div className="mt-4 mb-2">
+              <span className="inline-block bg-blue-50 text-blue-600 text-xs font-bold px-2 py-1 rounded">
+                {selectedAcademy.type}
+              </span>
+            </div>
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{selectedAcademy.name}</h2>
+            <p className="text-sm text-gray-500 mb-5">{selectedAcademy.address}</p>
+            
+            <div className="mb-6">
               <a 
                 href={`tel:${selectedAcademy.phone}`}
-                className="inline-block bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-sm font-semibold"
+                className="flex items-center justify-center w-full bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 py-3 rounded-xl text-sm font-bold transition"
               >
-                📞 전화 통화하기: {selectedAcademy.phone}
+                📞 통화하기: {selectedAcademy.phone}
               </a>
             </div>
             
             <div className="mb-6">
-              <h3 className="text-lg font-bold border-b pb-2 mb-3">🕒 학년별 시간표</h3>
+              <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-3">🕒 학년별 대략적인 예상 시간대</h3>
               <div className="flex flex-col gap-2">
                 {selectedAcademy.timetable.map((t: any, idx: number) => (
-                  <div key={idx} className="flex justify-between bg-gray-50 p-3 rounded text-sm">
-                    <span className="font-semibold text-gray-700">{t.target}</span>
-                    <span className="text-gray-600">{t.days} | {t.time}</span>
+                  <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg text-sm">
+                    <span className="font-bold text-gray-700 w-1/3">{t.target}</span>
+                    <span className="text-gray-600 w-2/3 text-right">
+                      {t.days ? `${t.days} | ` : ''}{t.time}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="mb-6">
-              <h3 className="text-lg font-bold border-b pb-2 mb-3">💰 학년별 수강료</h3>
-              <div className="flex flex-col grade-box flex flex-col gap-2">
+              <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-3">💰 예상 수강료 범위</h3>
+              <div className="flex flex-col gap-2">
                 {selectedAcademy.pricing.map((p: any, idx: number) => (
-                  <div key={idx} className="flex justify-between bg-blue-50 p-3 rounded text-sm">
-                    <span className="font-semibold text-gray-700">{p.grade}</span>
-                    <span className="font-bold text-blue-700">{p.price}</span>
+                  <div key={idx} className="flex justify-between items-center bg-blue-50 p-4 rounded-lg text-sm">
+                    <span className="font-bold text-gray-700 w-1/2">{p.grade}</span>
+                    <span className="font-extrabold text-blue-700 w-1/2 text-right">{p.price}</span>
                   </div>
                 ))}
               </div>
@@ -523,7 +528,7 @@ export default function AcademyFinder() {
               href={selectedAcademy.place_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full bg-[#FAE100] text-[#371D1E] text-center font-bold py-4 rounded-lg mt-8 mb-4 shadow-sm hover:brightness-95 transition"
+              className="block w-full bg-[#FAE100] text-[#371D1E] text-center font-bold py-4 rounded-xl mt-8 mb-4 shadow-sm hover:brightness-95 transition"
             >
               📍 카카오맵에서 상세 보기
             </a>
