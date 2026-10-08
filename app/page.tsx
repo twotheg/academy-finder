@@ -2,6 +2,81 @@
 
 import React, { useState, useEffect } from 'react';
 
+// 과목별 고유 색상 및 테마 매핑
+const SUBJECT_STYLES: Record<string, string> = {
+  수학: 'bg-blue-100 text-blue-800 border-blue-200',
+  영어: 'bg-purple-100 text-purple-800 border-purple-200',
+  국어: 'bg-amber-100 text-amber-800 border-amber-200',
+  과학: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  사회: 'bg-lime-100 text-lime-800 border-lime-200',
+  논술: 'bg-orange-100 text-orange-800 border-orange-200',
+  코딩: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+  피아노: 'bg-pink-100 text-pink-800 border-pink-200',
+  음악: 'bg-pink-100 text-pink-800 border-pink-200',
+  미술: 'bg-rose-100 text-rose-800 border-rose-200',
+  태권도: 'bg-red-100 text-red-800 border-red-200',
+  유도: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  주짓수: 'bg-slate-100 text-slate-800 border-slate-300',
+  검도: 'bg-stone-100 text-stone-800 border-stone-300',
+  어학원: 'bg-violet-100 text-violet-800 border-violet-200',
+  독재: 'bg-teal-100 text-teal-800 border-teal-200',
+  독서실: 'bg-teal-100 text-teal-800 border-teal-200',
+  기본: 'bg-amber-100 text-amber-800 border-amber-200',
+};
+
+// 학원 상호명에서 과목/종목을 판별하는 함수 (영수 복합, 다과목 추출 지원)
+function extractSubjects(name: string, selectedCategory: string): string[] {
+  const subjects: string[] = [];
+
+  // 1. 드롭다운 선택 과목이 전체가 아니라면 최우선 포함
+  if (selectedCategory && selectedCategory !== '전체') {
+    subjects.push(selectedCategory);
+  }
+
+  // 2. 상호명 내 주요 키워드 정밀 분석
+  if (name.includes('영어') || name.includes('어학') || name.includes('잉글리쉬') || name.includes('English')) {
+    if (!subjects.includes('영어')) subjects.push('영어');
+  }
+  if (name.includes('수학') || name.includes('매쓰') || name.includes('Math')) {
+    if (!subjects.includes('수학')) subjects.push('수학');
+  }
+  // 영수 복합 학원 처리 (예: 영수전문)
+  if (name.includes('영수')) {
+    if (!subjects.includes('영어')) subjects.push('영어');
+    if (!subjects.includes('수학')) subjects.push('수학');
+  }
+  if (name.includes('국어') || name.includes('논술')) {
+    if (!subjects.includes('국어')) subjects.push('국어');
+  }
+  if (name.includes('과학') || name.includes('사이언스')) {
+    if (!subjects.includes('과학')) subjects.push('과학');
+  }
+  if (name.includes('피아노') || name.includes('음악')) {
+    if (!subjects.includes('피아노')) subjects.push('피아노');
+  }
+  if (name.includes('미술') || name.includes('아트')) {
+    if (!subjects.includes('미술')) subjects.push('미술');
+  }
+  if (name.includes('태권도')) {
+    if (!subjects.includes('태권도')) subjects.push('태권도');
+  }
+  if (name.includes('유도')) {
+    if (!subjects.includes('유도')) subjects.push('유도');
+  }
+  if (name.includes('주짓수')) {
+    if (!subjects.includes('주짓수')) subjects.push('주짓수');
+  }
+  if (name.includes('검도')) {
+    if (!subjects.includes('검도')) subjects.push('검도');
+  }
+  if (name.includes('독재') || name.includes('독학재수') || name.includes('스터디')) {
+    if (!subjects.includes('독학재수')) subjects.push('독학재수');
+  }
+
+  // 특정 과목이 식별되지 않은 경우 기본 안내 배지 부여
+  return subjects.length > 0 ? subjects : ['보습/입시'];
+}
+
 // 1. 메인 화면 최하단 고정형 광고 배너
 const StickyBottomAd = () => {
   useEffect(() => {
@@ -411,7 +486,8 @@ export default function AcademyFinder() {
           name: doc.name,
           address: doc.address,
           phone: doc.phone,
-          type: category !== '전체' ? category : '학원',
+          // 상호명 분석을 통해 과목 태그 목록 자동 도출
+          subjects: extractSubjects(doc.name, category),
           place_url: doc.place_url,
           timetable: doc.timetable,
           pricing: doc.pricing,
@@ -497,9 +573,21 @@ export default function AcademyFinder() {
                   onClick={() => setSelectedAcademy(item)}
                 >
                   <div className="pr-8">
-                    <span className="inline-block bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
-                      {item.type}
-                    </span>
+                    {/* 과목별 색상 태그 리스트 */}
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {item.subjects.map((sub: string, sIdx: number) => {
+                        const colorClass = SUBJECT_STYLES[sub] || SUBJECT_STYLES['기본'];
+                        return (
+                          <span
+                            key={sIdx}
+                            className={`text-[11px] font-bold px-2 py-0.5 rounded border ${colorClass}`}
+                          >
+                            {sub}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    
                     <h3 className="font-bold text-gray-900 text-base mb-1">{item.name}</h3>
                     <p className="text-xs text-gray-500 mb-2 truncate">{item.address}</p>
                     <p className="text-xs font-semibold text-gray-700">📞 {item.phone}</p>
@@ -549,11 +637,21 @@ export default function AcademyFinder() {
               ✕
             </button>
             
-            <div className="mt-2 mb-2">
-              <span className="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded">
-                {selectedAcademy.type}
-              </span>
+            {/* 팝업 상단 과목 태그 표시 */}
+            <div className="mt-2 mb-2 flex flex-wrap gap-1.5">
+              {selectedAcademy.subjects?.map((sub: string, sIdx: number) => {
+                const colorClass = SUBJECT_STYLES[sub] || SUBJECT_STYLES['기본'];
+                return (
+                  <span
+                    key={sIdx}
+                    className={`text-xs font-bold px-2.5 py-0.5 rounded border ${colorClass}`}
+                  >
+                    {sub}
+                  </span>
+                );
+              })}
             </div>
+
             <h2 className="text-xl font-extrabold text-gray-900 mb-1">{selectedAcademy.name}</h2>
             <p className="text-xs text-gray-500 mb-4">{selectedAcademy.address}</p>
             
@@ -601,7 +699,7 @@ export default function AcademyFinder() {
               📍 카카오맵에서 상세 보기
             </a>
 
-            {/* 팝업 내부: 카카오맵 버튼 바로 아래 확실하게 들어간 광고 자리 */}
+            {/* 팝업 하단 광고 영역 */}
             <ModalAdBox />
           </div>
         </div>
