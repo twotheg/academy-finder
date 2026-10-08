@@ -4,8 +4,8 @@
   "description": "전국 학원 시간표 및 수강료 검색 서비스",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "background_color": "#FFFDF7",
+  "theme_color": "#FFFDF7",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
