@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 
-// 광고 배너 컴포넌트 (광고 미송출 시에도 자리 표시 및 안정적 로드)
-const AdBanner = () => {
+// 화면 하단 고정형 광고 배너 컴포넌트
+const StickyBottomAd = () => {
   useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
@@ -16,16 +16,18 @@ const AdBanner = () => {
   }, []);
 
   return (
-    <div className="w-full my-4 flex flex-col items-center justify-center p-3 rounded-xl border border-dashed border-amber-300 bg-amber-100/40 min-h-[90px] overflow-hidden text-center">
-      <span className="text-[11px] text-amber-700/70 mb-1 font-medium">SPONSORED AD</span>
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block', width: '100%', minHeight: '50px' }}
-        data-ad-client="ca-pub-4424569297437395"
-        data-ad-slot="여기에_광고단위_ID_입력" // 애드센스 대시보드에서 생성한 10자리 광고 슬롯 ID 입력
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      ></ins>
+    <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center bg-white/95 backdrop-blur-sm border-t border-amber-200/80 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] py-2 px-3">
+      <div className="w-full max-w-md flex flex-col items-center justify-center rounded-lg border border-dashed border-amber-400 bg-amber-50/70 h-[60px] text-center overflow-hidden">
+        <span className="text-[10px] text-amber-800/70 font-semibold tracking-wider">SPONSORED AD</span>
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'inline-block', width: '320px', height: '50px' }}
+          data-ad-client="ca-pub-4424569297437395"
+          data-ad-slot="여기에_광고단위_ID_입력" // 애드센스 대시보드에서 생성한 10자리 슬롯 ID
+          data-ad-format="horizontal"
+          data-full-width-responsive="false"
+        ></ins>
+      </div>
     </div>
   );
 };
@@ -396,10 +398,10 @@ export default function AcademyFinder() {
   };
 
   return (
-    // 전체 배경: 은은하고 따뜻한 크림/연노랑 톤 (bg-amber-50/40)
-    <div className="max-w-md mx-auto bg-[#FFFDF7] min-h-screen relative pb-12 shadow-sm">
+    // 하단 고정 배너 높이를 고려하여 pb-28 적용
+    <div className="max-w-md mx-auto bg-[#FFFDF7] min-h-screen relative pb-28 shadow-sm">
       {/* 상단 탭 네비게이션 */}
-      <div className="flex bg-white/90 backdrop-blur border-b border-amber-100 sticky top-0 z-10">
+      <div className="flex bg-white/90 backdrop-blur border-b border-amber-100 sticky top-0 z-20">
         <button 
           className={`flex-1 py-3 text-sm font-bold transition ${activeTab === 'search' ? 'border-b-2 border-amber-600 text-amber-700 bg-amber-50/50' : 'text-gray-500 hover:text-gray-700'}`}
           onClick={() => setActiveTab('search')}
@@ -459,6 +461,7 @@ export default function AcademyFinder() {
             </div>
           </div>
 
+          {/* 스크롤 가능한 학원 목록 영역 */}
           <div className="p-4 flex flex-col gap-3">
             {results.map((item) => {
               const isFav = favorites.includes(item.id);
@@ -486,9 +489,6 @@ export default function AcademyFinder() {
                 </div>
               );
             })}
-            
-            {/* 1. 검색 결과 리스트 하단 광고 자리 */}
-            {results.length > 0 && <AdBanner />}
 
             {results.length === 0 && !isLoading && (
               <div className="text-center text-gray-500 py-16 text-sm">
@@ -510,10 +510,13 @@ export default function AcademyFinder() {
         </div>
       )}
 
+      {/* 스마트폰 화면 최하단에 항상 고정되는 배너 */}
+      <StickyBottomAd />
+
       {/* 상세 모달창 */}
       {selectedAcademy && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end justify-center z-50">
-          <div className="bg-[#FFFDF9] w-full max-w-md h-5/6 rounded-t-2xl p-6 overflow-y-auto relative pb-20 shadow-2xl border-t border-amber-100">
+          <div className="bg-[#FFFDF9] w-full max-w-md h-5/6 rounded-t-2xl p-6 overflow-y-auto relative pb-24 shadow-2xl border-t border-amber-100">
             <button 
               className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full w-8 h-8 font-bold flex items-center justify-center transition"
               onClick={() => setSelectedAcademy(null)}
@@ -568,13 +571,10 @@ export default function AcademyFinder() {
               href={selectedAcademy.place_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full bg-[#FAE100] text-[#371D1E] text-center font-bold py-3.5 rounded-xl mt-4 mb-4 shadow-sm hover:brightness-95 transition text-sm"
+              className="block w-full bg-[#FAE100] text-[#371D1E] text-center font-bold py-3.5 rounded-xl mt-4 shadow-sm hover:brightness-95 transition text-sm"
             >
               📍 카카오맵에서 상세 보기
             </a>
-
-            {/* 2. 학원 상세 팝업 하단 광고 자리 */}
-            <AdBanner />
           </div>
         </div>
       )}
