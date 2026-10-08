@@ -20,27 +20,24 @@ const SUBJECT_STYLES: Record<string, string> = {
   검도: 'bg-stone-100 text-stone-800 border-stone-300',
   어학원: 'bg-violet-100 text-violet-800 border-violet-200',
   독재: 'bg-teal-100 text-teal-800 border-teal-200',
-  독서실: 'bg-teal-100 text-teal-800 border-teal-200',
+  독학재수: 'bg-teal-100 text-teal-800 border-teal-200',
   기본: 'bg-amber-100 text-amber-800 border-amber-200',
 };
 
-// 학원 상호명에서 과목/종목을 판별하는 함수 (영수 복합, 다과목 추출 지원)
+// 학원 상호명에서 과목 키워드 자동 분석
 function extractSubjects(name: string, selectedCategory: string): string[] {
   const subjects: string[] = [];
 
-  // 1. 드롭다운 선택 과목이 전체가 아니라면 최우선 포함
   if (selectedCategory && selectedCategory !== '전체') {
     subjects.push(selectedCategory);
   }
 
-  // 2. 상호명 내 주요 키워드 정밀 분석
   if (name.includes('영어') || name.includes('어학') || name.includes('잉글리쉬') || name.includes('English')) {
     if (!subjects.includes('영어')) subjects.push('영어');
   }
   if (name.includes('수학') || name.includes('매쓰') || name.includes('Math')) {
     if (!subjects.includes('수학')) subjects.push('수학');
   }
-  // 영수 복합 학원 처리 (예: 영수전문)
   if (name.includes('영수')) {
     if (!subjects.includes('영어')) subjects.push('영어');
     if (!subjects.includes('수학')) subjects.push('수학');
@@ -73,7 +70,6 @@ function extractSubjects(name: string, selectedCategory: string): string[] {
     if (!subjects.includes('독학재수')) subjects.push('독학재수');
   }
 
-  // 특정 과목이 식별되지 않은 경우 기본 안내 배지 부여
   return subjects.length > 0 ? subjects : ['보습/입시'];
 }
 
@@ -98,7 +94,7 @@ const StickyBottomAd = () => {
           className="adsbygoogle"
           style={{ display: 'inline-block', width: '320px', height: '50px' }}
           data-ad-client="ca-pub-4424569297437395"
-          data-ad-slot="여기에_광고단위_ID_입력"
+          data-ad-slot="1800426506"
           data-ad-format="horizontal"
           data-full-width-responsive="false"
         ></ins>
@@ -107,7 +103,7 @@ const StickyBottomAd = () => {
   );
 };
 
-// 2. 팝업(모달) 내부 하단 표시용 광고 박스
+// 2. 모달 팝업 내부 하단 광고 박스
 const ModalAdBox = () => {
   useEffect(() => {
     try {
@@ -127,7 +123,7 @@ const ModalAdBox = () => {
         className="adsbygoogle"
         style={{ display: 'block', width: '100%', minHeight: '50px' }}
         data-ad-client="ca-pub-4424569297437395"
-        data-ad-slot="여기에_광고단위_ID_입력"
+        data-ad-slot="1800426506"
         data-ad-format="auto"
         data-full-width-responsive="true"
       ></ins>
@@ -432,27 +428,42 @@ export default function AcademyFinder() {
   const [selectedAcademy, setSelectedAcademy] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [favorites, setFavorites] = useState<string[]>([]);
+  // 관심 학원 목록(객체 배열) 관리
+  const [favoriteList, setFavoriteList] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
 
+  // 로컬 스토리지에서 관심 학원 불러오기 (객체 구조 및 구버전 ID 배열 호환 처리)
   useEffect(() => {
-    const saved = localStorage.getItem('academy_favorites');
-    if (saved) {
-      setFavorites(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('academy_favorites_data');
+      if (saved) {
+        setFavoriteList(JSON.parse(saved));
+      } else {
+        // 기존 ID 배열 데이터가 남아있는 경우 초기화
+        localStorage.removeItem('academy_favorites');
+      }
+    } catch (e) {
+      console.error(e);
     }
   }, []);
 
-  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+  // 즐겨찾기 토글 (학원 전체 정보 저장/삭제)
+  const toggleFavorite = (academy: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    let updated;
-    if (favorites.includes(id)) {
-      updated = favorites.filter(favId => favId !== id);
+    let updated: any[];
+    const exists = favoriteList.some((item) => item.id === academy.id);
+    
+    if (exists) {
+      updated = favoriteList.filter((item) => item.id !== academy.id);
     } else {
-      updated = [...favorites, id];
+      updated = [...favoriteList, academy];
     }
-    setFavorites(updated);
-    localStorage.setItem('academy_favorites', JSON.stringify(updated));
+    
+    setFavoriteList(updated);
+    localStorage.setItem('academy_favorites_data', JSON.stringify(updated));
   };
+
+  const isFavorite = (id: string) => favoriteList.some((item) => item.id === id);
 
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCity = e.target.value;
@@ -486,7 +497,6 @@ export default function AcademyFinder() {
           name: doc.name,
           address: doc.address,
           phone: doc.phone,
-          // 상호명 분석을 통해 과목 태그 목록 자동 도출
           subjects: extractSubjects(doc.name, category),
           place_url: doc.place_url,
           timetable: doc.timetable,
@@ -515,7 +525,7 @@ export default function AcademyFinder() {
           className={`flex-1 py-3 text-sm font-bold transition ${activeTab === 'favorites' ? 'border-b-2 border-amber-600 text-amber-700 bg-amber-50/50' : 'text-gray-500 hover:text-gray-700'}`}
           onClick={() => setActiveTab('favorites')}
         >
-          ⭐ 관심 학원 ({favorites.length})
+          ⭐ 관심 학원 ({favoriteList.length})
         </button>
       </div>
 
@@ -565,7 +575,7 @@ export default function AcademyFinder() {
 
           <div className="p-4 flex flex-col gap-3">
             {results.map((item) => {
-              const isFav = favorites.includes(item.id);
+              const fav = isFavorite(item.id);
               return (
                 <div 
                   key={item.id} 
@@ -573,7 +583,6 @@ export default function AcademyFinder() {
                   onClick={() => setSelectedAcademy(item)}
                 >
                   <div className="pr-8">
-                    {/* 과목별 색상 태그 리스트 */}
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {item.subjects.map((sub: string, sIdx: number) => {
                         const colorClass = SUBJECT_STYLES[sub] || SUBJECT_STYLES['기본'];
@@ -593,11 +602,11 @@ export default function AcademyFinder() {
                     <p className="text-xs font-semibold text-gray-700">📞 {item.phone}</p>
                   </div>
                   <button 
-                    onClick={(e) => toggleFavorite(item.id, e)}
+                    onClick={(e) => toggleFavorite(item, e)}
                     className="absolute top-4 right-4 text-2xl focus:outline-none hover:scale-110 transition"
                     aria-label="즐겨찾기"
                   >
-                    {isFav ? '⭐' : '☆'}
+                    {fav ? '⭐' : '☆'}
                   </button>
                 </div>
               );
@@ -611,14 +620,48 @@ export default function AcademyFinder() {
           </div>
         </>
       ) : (
+        /* 관심 학원 탭: 찜한 학원 카드 목록 출력 */
         <div className="p-4 flex flex-col gap-3">
-          <h2 className="font-bold text-gray-800 text-base mb-2">⭐ 내가 찜한 관심 학원</h2>
-          {favorites.length === 0 ? (
-            <div className="text-center text-gray-500 py-16 text-sm">
-              아직 찜한 학원이 없습니다. 별표(☆)를 눌러 등록해 보세요!
+          <h2 className="font-bold text-gray-800 text-base mb-1">⭐ 내가 찜한 관심 학원</h2>
+          {favoriteList.length === 0 ? (
+            <div className="text-center text-gray-500 py-16 text-sm bg-white rounded-xl border border-amber-100 p-8">
+              아직 찜한 학원이 없습니다.<br/>검색 결과에서 별표(☆)를 눌러 등록해 보세요!
             </div>
           ) : (
-            <p className="text-xs text-gray-500">관심 학원 목록이 브라우저에 안전하게 보관되어 있습니다.</p>
+            favoriteList.map((item) => (
+              <div 
+                key={item.id} 
+                className="bg-white rounded-xl shadow-sm border border-amber-100/70 p-4 flex flex-col cursor-pointer hover:shadow-md hover:border-amber-300 transition relative"
+                onClick={() => setSelectedAcademy(item)}
+              >
+                <div className="pr-8">
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {item.subjects?.map((sub: string, sIdx: number) => {
+                      const colorClass = SUBJECT_STYLES[sub] || SUBJECT_STYLES['기본'];
+                      return (
+                        <span
+                          key={sIdx}
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded border ${colorClass}`}
+                        >
+                          {sub}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  
+                  <h3 className="font-bold text-gray-900 text-base mb-1">{item.name}</h3>
+                  <p className="text-xs text-gray-500 mb-2 truncate">{item.address}</p>
+                  <p className="text-xs font-semibold text-gray-700">📞 {item.phone}</p>
+                </div>
+                <button 
+                  onClick={(e) => toggleFavorite(item, e)}
+                  className="absolute top-4 right-4 text-2xl focus:outline-none hover:scale-110 transition"
+                  aria-label="즐겨찾기 해제"
+                >
+                  ⭐
+                </button>
+              </div>
+            ))
           )}
         </div>
       )}
@@ -637,7 +680,6 @@ export default function AcademyFinder() {
               ✕
             </button>
             
-            {/* 팝업 상단 과목 태그 표시 */}
             <div className="mt-2 mb-2 flex flex-wrap gap-1.5">
               {selectedAcademy.subjects?.map((sub: string, sIdx: number) => {
                 const colorClass = SUBJECT_STYLES[sub] || SUBJECT_STYLES['기본'];
@@ -667,7 +709,7 @@ export default function AcademyFinder() {
             <div className="mb-5">
               <h3 className="text-sm font-bold text-gray-800 border-b border-amber-200 pb-2 mb-3">🕒 학년별 대략적인 예상 시간대</h3>
               <div className="flex flex-col gap-2">
-                {selectedAcademy.timetable.map((t: any, idx: number) => (
+                {selectedAcademy.timetable?.map((t: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-center bg-white border border-amber-100 p-3 rounded-lg text-xs">
                     <span className="font-bold text-gray-700 w-1/3">{t.target}</span>
                     <span className="text-gray-600 w-2/3 text-right">
@@ -681,7 +723,7 @@ export default function AcademyFinder() {
             <div className="mb-5">
               <h3 className="text-sm font-bold text-gray-800 border-b border-amber-200 pb-2 mb-3">💰 예상 수강료 범위</h3>
               <div className="flex flex-col gap-2">
-                {selectedAcademy.pricing.map((p: any, idx: number) => (
+                {selectedAcademy.pricing?.map((p: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-center bg-amber-50/80 border border-amber-200 p-3 rounded-lg text-xs">
                     <span className="font-bold text-gray-700 w-1/2">{p.grade}</span>
                     <span className="font-extrabold text-amber-800 w-1/2 text-right">{p.price}</span>
@@ -699,7 +741,6 @@ export default function AcademyFinder() {
               📍 카카오맵에서 상세 보기
             </a>
 
-            {/* 팝업 하단 광고 영역 */}
             <ModalAdBox />
           </div>
         </div>
