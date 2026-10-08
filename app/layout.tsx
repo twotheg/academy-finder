@@ -4,15 +4,16 @@ import Script from 'next/script'
 export const metadata = {
   title: '우리동네 학원 찾기',
   description: '전국 학원 시간표 및 수강료 검색 서비스',
-  manifest: '/manifest.json', // 앱 설정 파일 연결
+  manifest: '/manifest.json',
   icons: {
     icon: '/android-chrome-192x192.png',
     apple: '/android-chrome-192x192.png',
   },
 }
 
+// 스마트폰 상단 상태바(시계/배터리) 배경색을 앱 배경(크림/연노랑)과 일치시킴
 export const viewport = {
-  themeColor: '#2563eb', // 브라우저 및 앱 상단 테마 색상 (블루)
+  themeColor: '#FFFDF7',
 }
 
 export default function RootLayout({
@@ -31,7 +32,7 @@ export default function RootLayout({
           strategy="afterInteractive"
         />
       </head>
-      <body>{children}</body>
+      <body className="bg-[#FFFDF7] text-gray-900">{children}</body>
     </html>
   )
 }
