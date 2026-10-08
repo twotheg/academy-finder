@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 
-// 화면 하단 고정형 광고 배너 컴포넌트
+// 1. 메인 화면 최하단 고정형 광고 배너
 const StickyBottomAd = () => {
   useEffect(() => {
     try {
@@ -23,11 +23,39 @@ const StickyBottomAd = () => {
           className="adsbygoogle"
           style={{ display: 'inline-block', width: '320px', height: '50px' }}
           data-ad-client="ca-pub-4424569297437395"
-          data-ad-slot="여기에_광고단위_ID_입력" // 애드센스 대시보드에서 생성한 10자리 슬롯 ID
+          data-ad-slot="여기에_광고단위_ID_입력"
           data-ad-format="horizontal"
           data-full-width-responsive="false"
         ></ins>
       </div>
+    </div>
+  );
+};
+
+// 2. 팝업(모달) 내부 하단 표시용 광고 박스
+const ModalAdBox = () => {
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const adsbygoogle = (window as any).adsbygoogle || [];
+        adsbygoogle.push({});
+      }
+    } catch (e) {
+      console.error('AdSense Modal Error:', e);
+    }
+  }, []);
+
+  return (
+    <div className="w-full mt-4 mb-6 flex flex-col items-center justify-center p-3 rounded-xl border border-dashed border-amber-400 bg-amber-100/50 min-h-[90px] text-center overflow-hidden">
+      <span className="text-[10px] text-amber-800/70 font-semibold tracking-wider mb-1">SPONSORED AD</span>
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block', width: '100%', minHeight: '50px' }}
+        data-ad-client="ca-pub-4424569297437395"
+        data-ad-slot="여기에_광고단위_ID_입력"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      ></ins>
     </div>
   );
 };
@@ -398,7 +426,6 @@ export default function AcademyFinder() {
   };
 
   return (
-    // 하단 고정 배너 높이를 고려하여 pb-28 적용
     <div className="max-w-md mx-auto bg-[#FFFDF7] min-h-screen relative pb-28 shadow-sm">
       {/* 상단 탭 네비게이션 */}
       <div className="flex bg-white/90 backdrop-blur border-b border-amber-100 sticky top-0 z-20">
@@ -423,7 +450,6 @@ export default function AcademyFinder() {
               <span>🏫 우리동네 학원 찾기</span>
             </h1>
             
-            {/* 직접 검색 입력창 */}
             <div className="flex gap-2 mb-3">
               <input 
                 type="text" 
@@ -461,7 +487,6 @@ export default function AcademyFinder() {
             </div>
           </div>
 
-          {/* 스크롤 가능한 학원 목록 영역 */}
           <div className="p-4 flex flex-col gap-3">
             {results.map((item) => {
               const isFav = favorites.includes(item.id);
@@ -510,15 +535,15 @@ export default function AcademyFinder() {
         </div>
       )}
 
-      {/* 스마트폰 화면 최하단에 항상 고정되는 배너 */}
+      {/* 스마트폰 화면 최하단 고정 배너 */}
       <StickyBottomAd />
 
-      {/* 상세 모달창 */}
+      {/* 학원 상세 모달창 (팝업) */}
       {selectedAcademy && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end justify-center z-50">
-          <div className="bg-[#FFFDF9] w-full max-w-md h-5/6 rounded-t-2xl p-6 overflow-y-auto relative pb-24 shadow-2xl border-t border-amber-100">
+          <div className="bg-[#FFFDF9] w-full max-w-md h-[88vh] rounded-t-2xl p-6 overflow-y-auto relative pb-16 shadow-2xl border-t border-amber-100 flex flex-col">
             <button 
-              className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full w-8 h-8 font-bold flex items-center justify-center transition"
+              className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full w-8 h-8 font-bold flex items-center justify-center transition z-10"
               onClick={() => setSelectedAcademy(null)}
             >
               ✕
@@ -571,10 +596,13 @@ export default function AcademyFinder() {
               href={selectedAcademy.place_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full bg-[#FAE100] text-[#371D1E] text-center font-bold py-3.5 rounded-xl mt-4 shadow-sm hover:brightness-95 transition text-sm"
+              className="block w-full bg-[#FAE100] text-[#371D1E] text-center font-bold py-3.5 rounded-xl mt-2 mb-2 shadow-sm hover:brightness-95 transition text-sm"
             >
               📍 카카오맵에서 상세 보기
             </a>
+
+            {/* 팝업 내부: 카카오맵 버튼 바로 아래 확실하게 들어간 광고 자리 */}
+            <ModalAdBox />
           </div>
         </div>
       )}
